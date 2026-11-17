@@ -37,7 +37,7 @@ programmer" step, or drag `pico-sws.uf2` from the latest release onto the drive 
 
 `webui/build.sh` with no arguments builds a page without bundled firmware; it then works with
 files you pick. Tests for the page's protocol and flashing logic run against a simulated
-programmer and tag: `node --test --test-concurrency=1 webui/test/`.
+programmer and tag: `node --test --test-concurrency=1 "webui/test/*.test.js"`.
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`: it builds everything above, attaches the
 programmer UF2s to a GitHub release, and deploys the page to GitHub Pages (repo setting: Pages
