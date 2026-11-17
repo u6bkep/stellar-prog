@@ -1,0 +1,44 @@
+[package]
+name = "pico-sws"
+version = "0.1.0"
+edition = "2021"
+description = "Telink SWire master on RP2040/RP2350 PIO for the Hanshow L3N programmer fixture"
+
+# Exactly one chip. rp2040 = the original Pico build (default, thumbv6m-none-eabi). rp2350 = the
+# Waveshare RP2350-Zero on stellar_prog rev 4: `cargo build-rp2350` (alias in .cargo/config.toml).
+[features]
+default = ["rp2040"]
+rp2040 = ["embassy-rp/rp2040"]
+rp2350 = ["embassy-rp/rp235xa"]
+
+[dependencies]
+# Same embassy fork + branch as rustprobe (Cargo.lock copied from there pins the revision).
+embassy-executor = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6", features = ["platform-cortex-m", "executor-thread", "defmt"] }
+embassy-time = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6", features = ["defmt"] }
+# The chip feature comes from this crate's rp2040 / rp2350 feature (above).
+embassy-rp = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl"] }
+embassy-usb = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6", features = ["defmt"] }
+embassy-futures = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6" }
+embassy-sync = { git = "https://github.com/computer-whisperer/embassy", branch = "raven_merge6" }
+
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+defmt = "1"
+defmt-rtt = "1"
+panic-probe = { version = "1", features = ["print-defmt"] }
+portable-atomic = { version = "1", features = ["critical-section"] }
+heapless = { version = "0.8", default-features = false }
+fixed = "1"
+static_cell = "2"
+embedded-io-async = "0.7"
+
+[profile.release]
+debug = 2
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+
+[profile.dev]
+debug = 2
+lto = "thin"
+opt-level = 1

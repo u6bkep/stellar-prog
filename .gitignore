@@ -1,0 +1,16 @@
+# Rust
+target/
+
+# KiCad local state and CAM scratch
+*.kicad_prl
+*-backups/
+fp-info-cache
+*.nc.lz
+*.moves.pkl
+
+__pycache__/
+
+# Build output
+/webui/dist/
+/dist-fw/
+/dist-tag/

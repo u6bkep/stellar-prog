@@ -1,0 +1,111 @@
+/* stellar-prog web UI: self-contained, no external fonts or assets. */
+
+:root {
+  --bg: #14161a;
+  --panel: #1d2026;
+  --panel2: #23262e;
+  --text: #d8dce3;
+  --dim: #8a919e;
+  --accent: #c94545;      /* the tags' red ink */
+  --accent2: #4d9de0;
+  --ok: #3fa860;
+  --warn: #d9a03f;
+  --err: #d05050;
+  --border: #33373f;
+  font-family: system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.4; }
+a { color: var(--accent2); }
+code { font-family: ui-monospace, monospace; font-size: .9em; }
+
+header {
+  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  padding: .8rem 1.2rem; border-bottom: 1px solid var(--border);
+}
+header h1 { margin: 0; font-size: 1.3rem; color: var(--accent); }
+.tagline { color: var(--dim); }
+
+main { padding: 1rem 1.2rem; max-width: 60rem; }
+
+.card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+}
+.card h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+.card h3 { margin: 1rem 0 .4rem; font-size: .95rem; color: var(--dim); }
+.card p { margin: .4rem 0; }
+
+.row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin: .5rem 0; }
+
+button {
+  background: var(--panel2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: .4rem .9rem; cursor: pointer; font-size: .9rem;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+.file-btn {
+  display: inline-block; background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 6px; padding: .4rem .9rem; cursor: pointer; font-size: .9rem;
+}
+.file-btn:hover { border-color: var(--accent); }
+
+input[type=text] {
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 5px; padding: .3rem .5rem;
+  font-size: .9rem; font-family: ui-monospace, monospace;
+}
+
+table { border-collapse: collapse; margin: .5rem 0; }
+table td { padding: .15rem .9rem .15rem 0; }
+table td:first-child { color: var(--dim); }
+
+.banner { padding: .5rem .8rem; border-radius: 6px; margin: .5rem 0; }
+.banner.error { background: #3a2020; border: 1px solid var(--err); }
+.banner.ok { background: #1e3226; border: 1px solid var(--ok); }
+.banner.warn { background: #38301c; border: 1px solid var(--warn); }
+.banner .hint { display: block; margin-top: .25rem; color: var(--text); opacity: .85; }
+#browser-banner { margin: 1rem 1.2rem 0; max-width: 60rem; }
+.hidden { display: none !important; }
+.dim { color: var(--dim); font-size: .85rem; }
+.status { font-size: .9rem; }
+.status.ok { color: var(--ok); }
+.status.warn { color: var(--warn); }
+
+.backup-box {
+  border: 1px solid var(--border); border-radius: 6px; padding: .3rem .8rem; margin: .7rem 0;
+  background: var(--panel2);
+}
+.backup-box.have { border-color: var(--ok); }
+.override { display: block; font-size: .85rem; margin: .4rem 0; color: var(--dim); }
+.override input { margin-right: .4rem; }
+
+details summary { cursor: pointer; color: var(--dim); }
+#update-box, #advanced-box { margin-top: .8rem; }
+.steps { padding-left: 1.4rem; }
+.steps li { margin-bottom: .9rem; }
+progress { width: 100%; height: .8rem; margin-top: .5rem; }
+
+#log-box {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--panel);
+  margin-bottom: 1rem;
+}
+#log-box summary { padding: .5rem .8rem; }
+#log {
+  margin: 0; padding: .5rem .8rem; max-height: 18rem; overflow-y: auto;
+  font-family: ui-monospace, monospace; font-size: .78rem;
+  white-space: pre-wrap; word-break: break-all;
+}
+.log-buttons { padding: 0 .8rem; }
+
+pre.code {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: .6rem .8rem; overflow-x: auto; font-size: .78rem;
+}
+
+footer { padding: .6rem 1.2rem; color: var(--dim); font-size: .8rem; }

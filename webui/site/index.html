@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stellar-prog: Hanshow Stellar-L3N tag programmer</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='8' y='22' width='84' height='56' rx='6' fill='%23ddd'/><rect x='16' y='30' width='44' height='8' fill='%23222'/><rect x='16' y='44' width='30' height='8' fill='%23c33'/></svg>">
+</head>
+<body>
+<header>
+  <h1>stellar-prog</h1>
+  <span class="tagline">back up and reflash Hanshow Stellar-L3N e-ink tags from the browser</span>
+</header>
+
+<div id="browser-banner" class="banner error hidden"></div>
+
+<main>
+
+<!-- ======================= Programmer ======================= -->
+<section class="card" id="programmer-card">
+  <h2>1. Programmer</h2>
+  <p class="dim">Plug the programmer fixture into USB, then connect. The browser lists it as
+    <b>pico-sws</b> twice (it has two serial ports); pick either, the page tells you if it was the wrong one.</p>
+  <div class="row">
+    <button id="btn-connect" class="primary">Connect programmer…</button>
+    <button id="btn-disconnect" disabled>Disconnect</button>
+    <span id="prog-status" class="status">Not connected.</span>
+  </div>
+  <table id="prog-info" class="hidden"></table>
+  <div id="prog-banner" class="banner hidden"></div>
+
+  <details id="update-box">
+    <summary>Update the programmer's firmware</summary>
+    <ol class="steps">
+      <li>
+        <b>Firmware file</b>
+        <div class="row">
+          <label><input type="radio" name="uf2-src" id="uf2-src-bundled" checked> bundled
+            <span id="uf2-bundled-info" class="dim">(checking…)</span></label>
+          <label><input type="radio" name="uf2-src" id="uf2-src-file"> from a file
+            <label class="file-btn">Choose .uf2<input type="file" id="uf2-file" accept=".uf2" hidden></label>
+            <span id="uf2-file-info" class="dim"></span></label>
+        </div>
+      </li>
+      <li>
+        <b>Put the programmer in bootloader mode</b>
+        <div class="row">
+          <button id="btn-bootsel" disabled>Restart programmer into bootloader</button>
+        </div>
+        <div class="dim">If that button is disabled (older firmware, or the programmer does not connect):
+          unplug it, hold the <b>BOOT</b> button on the RP2350-Zero (BOOTSEL on a Pico) while plugging it back in, then release.</div>
+      </li>
+      <li>
+        <b>Connect to the bootloader</b>
+        <div class="row">
+          <button id="btn-bootrom">Choose bootloader device…</button>
+          <span id="bootrom-info" class="dim"></span>
+        </div>
+        <div class="dim">In the browser's list, pick the RP2 / RP2350 boot device. If one was already
+          allowed earlier, the page connects to it by itself.</div>
+      </li>
+      <li>
+        <b>Write</b>
+        <div class="row">
+          <button id="btn-write-uf2" class="primary" disabled>Write firmware</button>
+        </div>
+        <progress id="uf2-progress" max="1" value="0" class="hidden"></progress>
+        <div id="uf2-status" class="status"></div>
+      </li>
+    </ol>
+    <p class="dim">No luck with the steps above? <a id="uf2-download" href="#" class="hidden" download>Download the firmware (.uf2)</a><span id="uf2-download-none">Download the firmware from the project's releases</span>,
+      put the programmer in bootloader mode as in step 2, and drag the file onto the drive that appears
+      (<code>RPI-RP2</code> or <code>RP2350</code>).</p>
+  </details>
+</section>
+
+<!-- ======================= Tag ======================= -->
+<section class="card" id="tag-card">
+  <h2>2. Tag</h2>
+  <p class="dim">Put the tag on the fixture so the pogo pins touch its pads, then <b>Detect</b>.
+    Back up before you write anything: flashing the BLE firmware replaces the Hanshow bootloader,
+    and your backup is the only way back to the original firmware.</p>
+
+  <div class="row">
+    <button id="btn-detect" disabled>Detect tag</button>
+    <button id="btn-backup" disabled>Back up flash</button>
+    <button id="btn-flash" class="primary" disabled>Flash BLE firmware</button>
+    <button id="btn-reboot" disabled>Reboot tag</button>
+  </div>
+  <table id="tag-info" class="hidden"></table>
+
+  <div class="backup-box">
+    <div class="row">
+      <span id="backup-status">No backup of this tag yet.</span>
+      <button id="btn-backup-download" class="hidden">Download backup again</button>
+    </div>
+    <label class="override"><input type="checkbox" id="backup-override">
+      I already have a full backup of <b>this</b> tag from earlier, and I understand that without one
+      the original Hanshow firmware cannot be put back.</label>
+  </div>
+
+  <div id="fw-info" class="dim"></div>
+
+  <progress id="tag-progress" max="1" value="0" class="hidden"></progress>
+  <div id="tag-status" class="status"></div>
+  <div id="tag-banner" class="banner hidden"></div>
+
+  <details id="advanced-box">
+    <summary>More: write a .bin file, restore a backup</summary>
+    <h3>Write a .bin file</h3>
+    <div class="row">
+      <label class="file-btn">Choose .bin<input type="file" id="bin-file" accept=".bin,application/octet-stream" hidden></label>
+      <span id="bin-file-info" class="dim">no file chosen</span>
+    </div>
+    <div class="row">
+      <label>at address <input type="text" id="bin-addr" value="0x0" size="10" spellcheck="false"></label>
+      <span class="dim">(a multiple of 0x1000)</span>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="bin-protected"> allow writing the bootloader (0x0–0xcfff) and per-tag (0x7b000–0x7ffff) regions</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="bin-reboot" checked> reboot the tag when done</label>
+    </div>
+    <div class="row"><button id="btn-write-bin" disabled>Write file</button></div>
+    <p class="dim">Same rule as above: needs a backup from this session, or the confirmation box ticked.</p>
+
+    <h3>Restore a backup</h3>
+    <div class="row">
+      <label class="file-btn">Choose backup .bin<input type="file" id="restore-file" accept=".bin,application/octet-stream" hidden></label>
+      <span id="restore-file-info" class="dim">no file chosen</span>
+    </div>
+    <div class="row"><button id="btn-restore" disabled>Restore</button></div>
+    <p class="dim">Writes a full 512 KB backup back to the tag (bootloader and all) and reboots it.
+      Only sectors that differ are written.</p>
+  </details>
+</section>
+
+<!-- ======================= Log ======================= -->
+<details id="log-box" open>
+  <summary>Log</summary>
+  <pre id="log"></pre>
+  <div class="row log-buttons">
+    <button id="btn-log-clear">Clear</button>
+    <button id="btn-log-save">Save log</button>
+  </div>
+</details>
+
+<!-- ======================= Help ======================= -->
+<section class="card" id="help">
+  <h2>Help</h2>
+
+  <h3>Browser</h3>
+  <p>Use a Chromium-based desktop browser (Chrome, Edge, Brave, Opera, Chromium). The page needs
+    <b>Web Serial</b> to talk to the programmer and <b>WebUSB</b> to update the programmer's firmware.
+    Firefox and Safari have neither, and mobile browsers are not supported. The page must be opened
+    over https or from <code>localhost</code>.</p>
+
+  <h3>Linux permissions</h3>
+  <p>The programmer is a USB serial device (<code>/dev/ttyACM*</code>). If connecting fails with
+    "could not open the serial port", either add yourself to the serial group
+    (<code>dialout</code> on Debian/Ubuntu/Fedora, <code>uucp</code> on Arch) and log in again, or
+    install a udev rule. The same rule file should also cover the RP2040/RP2350 bootloader, which
+    WebUSB needs write access to when updating the programmer:</p>
+  <pre class="code">
+# /etc/udev/rules.d/60-stellar-prog.rules
+# pico-sws programmer: serial ports for the logged-in user; keep ModemManager off them
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
+# RP2040 and RP2350 USB bootloaders (PICOBOOT), for updating the programmer
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000f", TAG+="uaccess"</pre>
+  <p>Then run <code>sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code> and replug.</p>
+
+  <h3>When something goes wrong</h3>
+  <ul>
+    <li><b>No reply from the tag</b>: the pogo pins are almost always the reason. Press the tag
+      flat onto the fixture and try again.</li>
+    <li><b>"That was the programmer's UART port"</b>: the programmer shows up twice in the browser's
+      list. Click Connect again and pick the other entry.</li>
+    <li><b>A write stopped half way</b>: nothing is lost while the tag stays on the fixture. Run the
+      same write again; sectors that are already right are skipped.</li>
+  </ul>
+
+  <h3 id="floader-help">floader</h3>
+  <p>The page loads pvvx's small flash loader (floader) into the tag's RAM to read and write its
+    flash. <span id="floader-state">Checking for the bundled copy…</span></p>
+  <div class="row hidden" id="floader-pick">
+    <label class="file-btn">Choose floader.bin<input type="file" id="floader-file" accept=".bin" hidden></label>
+    <span class="dim">from <a href="https://github.com/pvvx/TlsrComProg825x">pvvx/TlsrComProg825x</a>
+      (commit 2de91fe); the page checks its SHA-256.</span>
+  </div>
+
+  <h3>Credits</h3>
+  <ul>
+    <li><b>floader</b> by <a href="https://github.com/pvvx">pvvx</a>,
+      from <a href="https://github.com/pvvx/TlsrComProg825x">TlsrComProg825x</a>.
+      The SWire activation method is his too.</li>
+    <li><b>BLE firmware</b>: <a href="https://github.com/atc1441/ATC_TLSR_Paper">ATC_TLSR_Paper</a>
+      by <a href="https://github.com/atc1441">atc1441</a>, ported to the Stellar-L3N by
+      <a href="https://github.com/reece15">reece15</a> in
+      <a href="https://github.com/reece15/stellar-L3N-etag">stellar-L3N-etag</a>.
+      The copy offered here is built from that repository's source by this project's CI.</li>
+    <li>Programmer firmware, fixture and this page: <a id="repo-link" href="https://github.com/">stellar-prog</a>.</li>
+  </ul>
+  <p class="dim">Neither upstream project states a licence; their files are fetched or built from
+    the pinned upstream commits when this site is built, and are not part of this repository.</p>
+</section>
+
+</main>
+
+<footer>
+  <span id="site-version"></span>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

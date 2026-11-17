@@ -1,0 +1,19 @@
+[build]
+# RP2040 Pico (the default `rp2040` feature). RP2350-Zero: `cargo build-rp2350` (alias below).
+target = "thumbv6m-none-eabi"
+
+# Flash from BOOTSEL with picotool (see README.md), or via SWD with probe-rs.
+[target.thumbv6m-none-eabi]
+runner = "picotool load -f -x"
+
+[target.thumbv8m.main-none-eabihf]
+runner = "picotool load -f -x"
+
+[alias]
+build-rp2350 = "build --release --offline --target thumbv8m.main-none-eabihf --no-default-features --features rp2350"
+
+[env]
+DEFMT_LOG = "info"
+# Two CDC-ACM classes = 4 interfaces, 2 control handlers (defaults are 4 and 4: no headroom).
+EMBASSY_USB_MAX_INTERFACE_COUNT = "8"
+EMBASSY_USB_MAX_HANDLER_COUNT = "8"

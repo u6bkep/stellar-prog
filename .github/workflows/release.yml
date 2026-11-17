@@ -1,0 +1,99 @@
+# Tag-triggered release: test the web UI logic, build both programmer
+# firmwares, fetch floader and build the tag BLE firmware from their pinned
+# upstream commits (hash-checked), publish the programmer UF2s as a GitHub
+# release, and deploy the web UI with everything bundled to GitHub Pages via
+# the Actions publish source (no gh-pages branch).
+#
+# One-time repo setup: Settings -> Pages -> Source: "GitHub Actions".
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create the release
+  pages: write # deploy to Pages
+  id-token: write # deploy-pages OIDC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # What the firmware's PING reports (firmware/build.rs, docs/protocol.md).
+      STELLAR_PROG_VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The site's modules are ES modules without a package.json; Node 22+
+      # detects that on its own.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Web UI tests
+        run: node --test --test-concurrency=1 webui/test/
+
+      - name: Install Rust targets
+        run: rustup target add thumbv6m-none-eabi thumbv8m.main-none-eabihf
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: firmware
+
+      # firmware/ is a standalone crate; its .cargo/config.toml (default
+      # target, USB handler counts) applies only when cargo runs inside it.
+      # Not the build-rp2350 alias: that one is --offline.
+      - name: Build firmware (RP2040)
+        working-directory: firmware
+        run: cargo build --release --locked --target thumbv6m-none-eabi
+
+      - name: Build firmware (RP2350)
+        working-directory: firmware
+        run: >
+          cargo build --release --locked --target thumbv8m.main-none-eabihf
+          --no-default-features --features rp2350
+
+      # Prebuilt binary from the pico-sdk-tools releases (no picotool package
+      # exists for the runner's Ubuntu, and building from source needs the SDK).
+      - name: Install picotool
+        run: |
+          curl -sSfL -o picotool.tar.gz https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.2.0-4/picotool-2.2.0-a4-x86_64-lin.tar.gz
+          tar xzf picotool.tar.gz -C "$HOME"
+          echo "$HOME/picotool" >> "$GITHUB_PATH"
+
+      - name: Make UF2s
+        run: scripts/make-uf2.sh dist-fw
+
+      - name: Fetch floader, build tag firmware
+        run: scripts/fetch-tag-firmware.sh dist-tag
+
+      - name: Assemble site
+        run: >
+          webui/build.sh --programmer dist-fw --tag-firmware dist-tag
+          --version "${{ github.ref_name }}"
+          --repo "https://github.com/${{ github.repository }}"
+
+      # Only this project's own firmware goes into the release; the
+      # third-party tag binaries are bundled with the site, with credits.
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-fw/*.uf2
+          generate_release_notes: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: webui/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
